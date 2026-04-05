@@ -17,39 +17,50 @@ function extractSeries(observations: FHIRObservation[], loincCode: string) {
 
 function StatCard({ label, value, unit, alert }: { label: string; value: string | number; unit: string; alert?: boolean }) {
   return (
-    <div className={`rounded-xl border p-4 ${alert ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-white'}`}>
-      <p className="text-xs text-slate-400 uppercase font-semibold tracking-wider mb-1">{label}</p>
-      <p className={`text-2xl font-bold ${alert ? 'text-red-600' : 'text-teal-700'}`}>
-        {value} <span className="text-sm font-normal text-slate-400">{unit}</span>
+    <div style={{
+      background: alert ? '#FFF8F5' : '#fff',
+      border: `1px solid ${alert ? '#FCA5A5' : 'var(--pp-border)'}`,
+      borderRadius: 10, padding: '14px 16px',
+    }}>
+      <p style={{ fontSize:10, fontWeight:700, color:'var(--pp-text-muted)', letterSpacing:'0.8px', textTransform:'uppercase', margin:'0 0 6px' }}>{label}</p>
+      <p style={{ fontSize:26, fontWeight:600, color: alert ? '#E24B4A' : 'var(--teal-dark)', fontFamily:"'JetBrains Mono', monospace", margin:0, lineHeight:1.1 }}>
+        {value}<span style={{ fontSize:14, fontWeight:400, color:'var(--pp-text-muted)', marginLeft:4 }}>{unit}</span>
       </p>
     </div>
   )
 }
 
-function WearableChart({ data, color, unit, label, refVal }: {
+function WearableChart({ data, color, unit, label, refVal, refColor }: {
   data: { time: number; value: number; label: string }[]
-  color: string; unit: string; label: string; refVal?: number
+  color: string; unit: string; label: string; refVal?: number; refColor?: string
 }) {
   if (!data.length) return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4 text-center text-slate-400 text-sm py-8">
+    <div style={{ background:'#fff', border:'1px solid var(--pp-border)', borderRadius:10, padding:'24px 16px', textAlign:'center', color:'var(--pp-text-muted)', fontSize:13 }}>
       No {label} data
     </div>
   )
   const displayed = data.slice(-48)
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-semibold text-slate-700">{label}</p>
-        <p className="text-xs text-slate-400">{unit} · 72h</p>
+    <div style={{ background:'#fff', border:'1px solid var(--pp-border)', borderRadius:10, padding:'14px 16px' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <span style={{ fontSize:11, fontWeight:700, color:'var(--pp-text-muted)', letterSpacing:'0.8px', textTransform:'uppercase' }}>{label}</span>
+        </div>
+        {refVal && (
+          <div style={{ display:'flex', alignItems:'center', gap:4, fontSize:11, color:'#E24B4A' }}>
+            <span style={{ width:6, height:6, borderRadius:'50%', background:'#E24B4A', display:'inline-block' }} />
+            Alert threshold ({refVal} {unit})
+          </div>
+        )}
       </div>
-      <ResponsiveContainer width="100%" height={120}>
-        <LineChart data={displayed} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-          <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#94a3b8' }} interval={11} />
-          <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} />
-          <Tooltip contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', fontSize: 11, borderRadius: 8 }} />
-          {refVal && <ReferenceLine y={refVal} stroke="#f87171" strokeDasharray="4 2" />}
-          <Line type="monotone" dataKey="value" stroke={color} dot={false} strokeWidth={2} />
+      <ResponsiveContainer width="100%" height={160}>
+        <LineChart data={displayed} margin={{ top:5, right:5, left:-20, bottom:0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--pp-border)" />
+          <XAxis dataKey="label" tick={{ fontSize:9, fill:'var(--pp-text-muted)' }} interval={11} />
+          <YAxis tick={{ fontSize:9, fill:'var(--pp-text-muted)' }} />
+          <Tooltip contentStyle={{ background:'#fff', border:'1px solid var(--pp-border)', fontSize:11, borderRadius:8, fontFamily:"'DM Sans', sans-serif" }} />
+          {refVal && <ReferenceLine y={refVal} stroke={refColor ?? '#E24B4A'} strokeDasharray="4 2" />}
+          <Line type="monotone" dataKey="value" stroke={color} dot={color === '#EF9F27'} strokeWidth={2} dotRadius={4} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -69,32 +80,32 @@ export function WearablePanel({ context, isLoading }: Props) {
   const meanGlucose = context?.wearable_summary?.glucose_mean
 
   if (isLoading) return (
-    <div className="p-6 space-y-3">
-      {[1,2,3].map(i => <div key={i} className="h-32 bg-slate-100 rounded-xl animate-pulse" />)}
+    <div style={{ padding:24, display:'flex', flexDirection:'column', gap:12 }}>
+      {[1,2,3].map(i => <div key={i} style={{ height:128, background:'var(--pp-surface2)', borderRadius:10 }} />)}
     </div>
   )
 
   return (
-    <div className="p-6 space-y-4" data-testid="wearable-panel">
+    <div style={{ padding:24, display:'flex', flexDirection:'column', gap:14 }} data-testid="wearable-panel">
       {/* Stat cards */}
-      <div className="grid grid-cols-3 gap-3">
-        <StatCard label="Nocturnal HR" value={nocturnalHR ? Math.round(nocturnalHR) : '—'} unit="bpm" alert={!!nocturnalHR && nocturnalHR > 100} />
-        <StatCard label="Daily Steps" value={dailySteps ? Math.round(dailySteps) : '—'} unit="steps" />
-        <StatCard label="Mean Glucose" value={meanGlucose ? Math.round(meanGlucose) : '—'} unit="mg/dL" />
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12 }}>
+        <StatCard label="Nocturnal HR"  value={nocturnalHR  ? Math.round(nocturnalHR)  : '—'} unit="bpm"   alert={!!nocturnalHR && nocturnalHR > 100} />
+        <StatCard label="Daily Steps"   value={dailySteps   ? Math.round(dailySteps)   : '—'} unit="steps" />
+        <StatCard label="Mean Glucose"  value={meanGlucose  ? Math.round(meanGlucose)  : '—'} unit="mg/dL" />
       </div>
 
       {/* Anomaly banners */}
       {anomalies.map((flag, i) => (
-        <div key={i} className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-          <span className="text-amber-500 mt-0.5">⚠</span>
-          <p className="text-sm text-amber-800">{flag}</p>
+        <div key={i} style={{ display:'flex', alignItems:'center', gap:10, background:'var(--pp-warning-bg)', border:'1px solid #FCD34D', borderRadius:8, padding:'10px 14px', fontSize:12, color:'var(--pp-warning)', fontWeight:500 }}>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2L14 13H2L8 2Z" stroke="var(--pp-warning)" strokeWidth="1.5"/><path d="M8 6V9M8 11V11.5" stroke="var(--pp-warning)" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          {flag}
         </div>
       ))}
 
       {/* Charts */}
-      <WearableChart data={hrData} color="#0d9488" unit="bpm" label="Heart Rate — 72H" refVal={100} />
-      <WearableChart data={glucoseData} color="#f59e0b" unit="mg/dL" label="Glucose — 72H" refVal={180} />
-      <WearableChart data={stepsData} color="#6366f1" unit="steps" label="Daily Steps vs Baseline" />
+      <WearableChart data={hrData}      color="var(--teal)"  unit="bpm"   label="Heart Rate — 72H"           refVal={100} />
+      <WearableChart data={glucoseData} color="#EF9F27"       unit="mg/dL" label="Glucose — 72H"              refVal={180} />
+      <WearableChart data={stepsData}   color="#6366f1"       unit="steps" label="Daily Steps vs Baseline" />
     </div>
   )
 }

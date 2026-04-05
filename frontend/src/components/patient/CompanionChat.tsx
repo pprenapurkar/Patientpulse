@@ -1,6 +1,6 @@
 // src/components/patient/CompanionChat.tsx
 import React, { useState, useRef, useEffect } from 'react'
-import { Send, Loader2 } from 'lucide-react'
+import { Send, Loader2, Heart } from 'lucide-react'
 import { apiClient } from '../../api/apiClient'
 import type { PatientContext, ConversationTurn } from '../../types/api.types'
 
@@ -20,7 +20,7 @@ export function CompanionChat({ patientId, onCheckinComplete }: Props) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      text: "Hi! I'm your recovery companion. How are you feeling today? You can tell me about any symptoms, how you slept, or whether you've taken your medications.",
+      text: "Hi! I'm Pulse, your recovery companion 👋 How are you feeling today? You can tell me about any symptoms, whether you've taken your medications, or just how your day is going.",
     },
   ])
   const [input, setInput] = useState('')
@@ -36,18 +36,14 @@ export function CompanionChat({ patientId, onCheckinComplete }: Props) {
     const msg = input.trim()
     if (!msg || isLoading) return
     setInput('')
-
-    setMessages((prev) => [...prev, { role: 'user', text: msg }])
+    setMessages(prev => [...prev, { role: 'user', text: msg }])
     setIsLoading(true)
 
     try {
       const res = await apiClient.submitCheckin(patientId, msg, history.current)
       if (res.data) {
         const { reply, extracted } = res.data
-        setMessages((prev) => [
-          ...prev,
-          { role: 'assistant', text: reply, flagLevel: extracted.flag_level },
-        ])
+        setMessages(prev => [...prev, { role: 'assistant', text: reply, flagLevel: extracted.flag_level }])
         history.current = [
           ...history.current,
           { role: 'user' as const, content: msg, timestamp: new Date().toISOString() },
@@ -55,63 +51,59 @@ export function CompanionChat({ patientId, onCheckinComplete }: Props) {
         ].slice(-10)
 
         if (extracted.flag_level === 'ESCALATE') {
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: 'assistant',
-              text: "I noticed you may need some extra support. Please tap the red button above to reach your care team right away.",
-            },
-          ])
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            text: 'I noticed you may need some extra support. Please tap the button below to reach your care team right away.',
+          }])
         }
         onCheckinComplete()
       }
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', text: "I'm having trouble connecting right now. Please try again in a moment." },
-      ])
-    } finally {
-      setIsLoading(false)
-    }
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        text: "I'm having trouble connecting right now. Please try again in a moment.",
+      }])
+    } finally { setIsLoading(false) }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSend()
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-0" data-testid="companion-chat">
-      <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-2">Daily Check-in</p>
+    <div style={{ display:'flex', flexDirection:'column', flex:1, minHeight:0 }} data-testid="companion-chat">
+
+      {/* Section header */}
+      <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:10 }}>
+        <Heart size={12} color="var(--teal)" />
+        <span style={{ fontSize:10, fontWeight:700, color:'var(--pp-text-muted)', letterSpacing:'0.8px', textTransform:'uppercase' }}>Daily Check-in</span>
+      </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-3 mb-3 min-h-0" aria-live="polite" aria-label="Conversation">
+      <div style={{ flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:10, marginBottom:10, minHeight:0 }} aria-live="polite" aria-label="Conversation">
         {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            <div
-              className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-                msg.role === 'user'
-                  ? 'bg-teal-600 text-white rounded-br-sm'
-                  : 'bg-slate-100 text-slate-800 rounded-bl-sm'
-              } ${msg.flagLevel === 'ESCALATE' ? 'border border-red-500' : ''}`}
-              data-testid={`message-${msg.role}`}
-            >
+          <div key={i} style={{ display:'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+            <div style={{
+              maxWidth:'82%',
+              borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+              padding:'10px 14px',
+              fontSize:13.5, lineHeight:1.55,
+              background: msg.role === 'user' ? 'var(--teal)' : 'var(--pp-surface2)',
+              color: msg.role === 'user' ? '#fff' : 'var(--pp-text)',
+              border: msg.role === 'user' ? 'none' : '1px solid var(--pp-border)',
+              outline: msg.flagLevel === 'ESCALATE' ? '2px solid #E24B4A' : 'none',
+            }} data-testid={`message-${msg.role}`}>
               {msg.text}
               {msg.flagLevel === 'FOLLOW_UP' && (
-                <p className="text-xs text-amber-400 mt-1 opacity-80">⚠ Your care team may follow up</p>
+                <p style={{ fontSize:11, color:'#EF9F27', marginTop:4, opacity:0.9 }}>⚠ Your care team may follow up</p>
               )}
             </div>
           </div>
         ))}
         {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-slate-100 rounded-2xl rounded-bl-sm px-3 py-2" aria-busy="true">
-              <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+          <div style={{ display:'flex', justifyContent:'flex-start' }}>
+            <div style={{ background:'var(--pp-surface2)', border:'1px solid var(--pp-border)', borderRadius:'18px 18px 18px 4px', padding:'10px 14px' }} aria-busy="true">
+              <Loader2 size={14} color="var(--pp-text-muted)" style={{ animation:'spin 1s linear infinite' }} />
             </div>
           </div>
         )}
@@ -119,25 +111,37 @@ export function CompanionChat({ patientId, onCheckinComplete }: Props) {
       </div>
 
       {/* Input */}
-      <div className="flex gap-2 items-end">
+      <div style={{ display:'flex', gap:8, alignItems:'flex-end' }}>
         <textarea
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="How are you feeling today?"
           rows={2}
           maxLength={500}
           disabled={isLoading}
           aria-label="Check-in message"
-          className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-slate-400 resize-none focus:outline-none focus:border-teal-500 disabled:opacity-50"
+          style={{
+            flex:1, background:'#fff', border:'1.5px solid var(--pp-border2)',
+            borderRadius:12, padding:'10px 14px', fontSize:13, color:'var(--pp-text)',
+            resize:'none', outline:'none', fontFamily:"'DM Sans', sans-serif", lineHeight:1.5,
+          }}
         />
         <button
           onClick={handleSend}
           disabled={isLoading || !input.trim()}
           aria-label="Send check-in message"
-          className="p-2.5 bg-teal-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-slate-400 rounded-xl text-white transition-colors shrink-0"
+          style={{
+            width:40, height:40, borderRadius:12, flexShrink:0,
+            background: isLoading || !input.trim() ? 'var(--pp-surface2)' : 'var(--teal)',
+            border:'none', cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer',
+            display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.15s',
+          }}
         >
-          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          {isLoading
+            ? <Loader2 size={15} color="var(--pp-text-muted)" style={{ animation:'spin 1s linear infinite' }} />
+            : <Send size={15} color={input.trim() ? '#fff' : 'var(--pp-text-muted)'} />
+          }
         </button>
       </div>
     </div>

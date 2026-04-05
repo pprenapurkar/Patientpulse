@@ -1,9 +1,27 @@
-import { useState } from 'react'
-import { Send, Loader2 } from 'lucide-react'
+// src/components/clinician/AIQueryPanel.tsx
+import { useState, useEffect } from 'react'
+import { Send, Loader2, AlertTriangle, FlaskConical, Pill, TrendingUp } from 'lucide-react'
 import { useAIQueryStream } from '../../hooks/useAIQueryStream'
 import type { PatientContext, ConversationTurn } from '../../types/api.types'
 
-interface Props { patientId: string; context: PatientContext | undefined }
+interface Props {
+  patientId: string
+  context: PatientContext | undefined
+}
+
+interface RiskFlag {
+  flag: string
+  severity: 'HIGH' | 'MEDIUM' | 'LOW'
+  citation: string
+}
+
+interface ParsedResponse {
+  trend_analysis?: string
+  risk_flags?: RiskFlag[]
+  suggested_labs?: string[]
+  medication_notes?: string
+  disclaimer?: string
+}
 
 const SUGGESTED = [
   'What are the main clinical concerns right now?',
@@ -12,120 +30,258 @@ const SUGGESTED = [
   'Is there anything in her labs I should act on?',
 ]
 
-function renderStream(text: string) {
-  const start = text.indexOf('{')
-  const end = text.lastIndexOf('}')
-  if (start === -1 || end === -1) return <pre className="text-xs text-slate-500 whitespace-pre-wrap">{text}</pre>
-  let data: any = null
-  try { data = JSON.parse(text.slice(start, end + 1)) } catch {
-    return <pre className="text-xs text-slate-500 whitespace-pre-wrap">{text.slice(0, text.indexOf('__DONE__') > 0 ? text.indexOf('__DONE__') : undefined)}</pre>
-  }
-
+function ObsTag({ id }: { id: string }) {
   return (
-    <div className="space-y-5 text-sm">
-      {data.trend_analysis && (
+    <span style={{ fontSize:10, fontWeight:600, color:'var(--teal)', background:'var(--teal-light)', border:'1px solid var(--teal-border)', borderRadius:4, padding:'1px 6px', fontFamily:"'JetBrains Mono', monospace", margin:'0 2px', display:'inline' }}>
+      #{id.slice(0,6)}
+    </span>
+  )
+}
+
+function parseCitations(text: string) {
+  const parts = text.split(/(Obs:[a-zA-Z0-9_\-]+)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('Obs:')) {
+      return <ObsTag key={i} id={part.replace('Obs:', '')} />
+    }
+    return <span key={i}>{part}</span>
+  })
+}
+
+function RiskBadge({ severity }: { severity: string }) {
+  const styles: Record<string, { bg: string; color: string }> = {
+    HIGH:   { bg: '#E24B4A', color: '#fff' },
+    MEDIUM: { bg: '#EF9F27', color: '#fff' },
+    LOW:    { bg: '#378ADD', color: '#fff' },
+  }
+  const s = styles[severity] ?? styles.LOW
+  return (
+    <span style={{ fontSize:10, fontWeight:700, letterSpacing:'0.5px', padding:'2px 7px', borderRadius:4, background:s.bg, color:s.color, whiteSpace:'nowrap', flexShrink:0 }}>
+      {severity}
+    </span>
+  )
+}
+
+function RiskRowBg({ severity }: { severity: string }) {
+  if (severity === 'HIGH')   return 'var(--pp-danger-bg)'
+  if (severity === 'MEDIUM') return 'var(--pp-warning-bg)'
+  return '#E6F1FB'
+}
+
+function StructuredResponse({ parsed, citations }: { parsed: ParsedResponse; citations: { observation_id?: string }[] }) {
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:16, fontSize:13 }}>
+      {/* Agent label */}
+      <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:10, fontWeight:700, color:'var(--teal)', letterSpacing:'0.8px', textTransform:'uppercase' }}>
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="var(--teal)" strokeWidth="2"><path d="M13 3H3a1 1 0 00-1 1v6a1 1 0 001 1h2l2 2 2-2h4a1 1 0 001-1V4a1 1 0 00-1-1z"/></svg>
+        DiagnosticAgent
+        {citations.length > 0 && <span style={{ marginLeft:4, color:'var(--pp-text-muted)', fontWeight:400 }}>· {citations.length} citations</span>}
+      </div>
+
+      {parsed.trend_analysis && (
         <div>
-          <p className="text-xs text-teal-700 uppercase font-bold mb-2 tracking-wider">Trend Analysis</p>
-          <p className="text-slate-700 leading-relaxed">{data.trend_analysis}</p>
+          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
+            <TrendingUp size={13} color="var(--teal)" />
+            <p style={{ fontSize:12, fontWeight:700, color:'var(--teal-dark)', margin:0, letterSpacing:'0.5px', textTransform:'uppercase' }}>Trend Analysis</p>
+          </div>
+          <p style={{ color:'var(--pp-text-sec)', lineHeight:1.65, margin:0 }}>{parseCitations(parsed.trend_analysis)}</p>
         </div>
       )}
-      {data.risk_flags?.length > 0 && (
+
+      {parsed.risk_flags && parsed.risk_flags.length > 0 && (
         <div>
-          <p className="text-xs text-teal-700 uppercase font-bold mb-2 tracking-wider">Risk Flags</p>
-          <div className="space-y-2">
-            {data.risk_flags.map((f: any, i: number) => (
-              <div key={i} className={`flex gap-2 rounded-lg p-3 border ${f.severity==='HIGH'?'border-red-200 bg-red-50':f.severity==='MEDIUM'?'border-amber-200 bg-amber-50':'border-blue-200 bg-blue-50'}`}>
-                <span className={`text-xs font-bold px-1.5 py-0.5 rounded shrink-0 ${f.severity==='HIGH'?'text-red-700 bg-red-100':f.severity==='MEDIUM'?'text-amber-700 bg-amber-100':'text-blue-700 bg-blue-100'}`}>{f.severity}</span>
-                <p className="text-slate-700 text-xs leading-relaxed">{f.flag} {f.citation && <span className="font-mono text-teal-600 text-xs">#{f.citation.slice(-6)}</span>}</p>
+          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:8 }}>
+            <AlertTriangle size={13} color="#EF9F27" />
+            <p style={{ fontSize:12, fontWeight:700, color:'var(--teal-dark)', margin:0, letterSpacing:'0.5px', textTransform:'uppercase' }}>Risk Flags</p>
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+            {parsed.risk_flags.map((flag, i) => (
+              <div key={i} style={{ display:'flex', gap:8, alignItems:'flex-start', background:RiskRowBg(flag.severity), borderRadius:7, padding:'8px 10px' }}>
+                <RiskBadge severity={flag.severity} />
+                <p style={{ color:'var(--pp-text-sec)', lineHeight:1.55, flex:1, margin:0 }}>
+                  {parseCitations(flag.flag)}
+                  {flag.citation && <ObsTag id={flag.citation.replace('Obs:', '')} />}
+                </p>
               </div>
             ))}
           </div>
         </div>
       )}
-      {data.suggested_labs?.length > 0 && (
+
+      {parsed.suggested_labs && parsed.suggested_labs.length > 0 && (
         <div>
-          <p className="text-xs text-teal-700 uppercase font-bold mb-2 tracking-wider">Suggested Follow-up</p>
-          <ol className="space-y-1.5">
-            {data.suggested_labs.map((l: string, i: number) => (
-              <li key={i} className="flex gap-2 text-slate-700 text-xs">
-                <span className="text-slate-400 font-mono shrink-0">{i+1}.</span>
-                <span className="leading-relaxed">{l}</span>
+          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:8 }}>
+            <FlaskConical size={13} color="#6366f1" />
+            <p style={{ fontSize:12, fontWeight:700, color:'var(--teal-dark)', margin:0, letterSpacing:'0.5px', textTransform:'uppercase' }}>Suggested Follow-up</p>
+          </div>
+          <ol style={{ margin:0, padding:0, listStyle:'none', display:'flex', flexDirection:'column', gap:6 }}>
+            {parsed.suggested_labs.map((lab, i) => (
+              <li key={i} style={{ display:'flex', gap:8, color:'var(--pp-text-sec)' }}>
+                <span style={{ color:'var(--pp-text-muted)', fontFamily:"'JetBrains Mono', monospace", fontSize:11, flexShrink:0, marginTop:1 }}>{i+1}.</span>
+                <span style={{ lineHeight:1.55 }}>{parseCitations(lab)}</span>
               </li>
             ))}
           </ol>
         </div>
       )}
-      {data.medication_notes && (
+
+      {parsed.medication_notes && (
         <div>
-          <p className="text-xs text-teal-700 uppercase font-bold mb-2 tracking-wider">Medication Notes</p>
-          <p className="text-slate-700 text-xs leading-relaxed">{data.medication_notes}</p>
+          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:8 }}>
+            <Pill size={13} color="#0D9E75" />
+            <p style={{ fontSize:12, fontWeight:700, color:'var(--teal-dark)', margin:0, letterSpacing:'0.5px', textTransform:'uppercase' }}>Medication Notes</p>
+          </div>
+          <p style={{ color:'var(--pp-text-sec)', lineHeight:1.65, margin:0 }}>{parseCitations(parsed.medication_notes)}</p>
         </div>
       )}
-      <p className="text-xs text-slate-400 italic border-t border-slate-200 pt-3">
-        For clinical decision support only — not a clinical prediction.
+
+      {citations.length > 0 && (
+        <div style={{ borderTop:'1px solid var(--pp-border)', paddingTop:10 }}>
+          <p style={{ fontSize:11, color:'var(--pp-text-muted)', fontWeight:600, margin:'0 0 6px' }}>Citations</p>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
+            {citations.map((c, i) => (
+              <span key={i} style={{ fontSize:10, fontFamily:"'JetBrains Mono', monospace", background:'var(--teal-light)', color:'var(--teal)', border:'1px solid var(--teal-border)', borderRadius:4, padding:'1px 6px' }}>
+                #{c.observation_id?.slice(0,6)}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <p style={{ fontSize:11, color:'var(--pp-text-muted)', fontStyle:'italic', borderTop:'1px solid var(--pp-border)', paddingTop:10, margin:0 }}>
+        ⚠ Clinical decision support only — not a clinical prediction or diagnosis.
       </p>
     </div>
   )
 }
 
-export function AIQueryPanel({ patientId }: Props) {
+function tryParseJSON(text: string): ParsedResponse | null {
+  const doneIdx = text.indexOf('__DONE__:')
+  const source = doneIdx !== -1 ? text.slice(doneIdx + 9) : text
+  const start = source.indexOf('{')
+  const end = source.lastIndexOf('}')
+  if (start === -1 || end === -1) return null
+  try { return JSON.parse(source.slice(start, end + 1)) as ParsedResponse } catch { return null }
+}
+
+export function AIQueryPanel({ patientId, context: _context }: Props) {
   const [query, setQuery] = useState('')
   const [history] = useState<ConversationTurn[]>([])
-  const { streamText, isStreaming, error, submitQuery } = useAIQueryStream()
+  const [parsed, setParsed] = useState<ParsedResponse | null>(null)
+  const { streamText, citations, isStreaming, error, submitQuery } = useAIQueryStream()
+
+  useEffect(() => {
+    if (!streamText) { setParsed(null); return }
+    if (streamText.includes('__DONE__:')) {
+      const result = tryParseJSON(streamText)
+      if (result) setParsed(result)
+    }
+  }, [streamText])
 
   const handleSubmit = async (q?: string) => {
     const text = q ?? query
     if (!text.trim() || isStreaming) return
     setQuery('')
+    setParsed(null)
     await submitQuery(patientId, text.trim(), history)
   }
 
-  const hasCompleteJSON = streamText && streamText.includes('}')
+  const streamingDisplay = streamText?.split('__DONE__:')[0] ?? ''
 
   return (
-    <div className="flex flex-col h-full" data-testid="ai-query-panel">
-      <div className="p-6 border-b border-slate-200 bg-white">
-        <p className="text-xs text-slate-400 uppercase font-semibold tracking-wider mb-3">Suggested Queries</p>
-        <div className="flex flex-wrap gap-2">
+    <div style={{ display:'flex', flexDirection:'column', height:'100%' }} data-testid="ai-query-panel">
+
+      {/* Suggested queries */}
+      <div style={{ padding:'16px 24px 14px', borderBottom:'1px solid var(--pp-border)', background:'#fff' }}>
+        <p style={{ fontSize:10, fontWeight:700, color:'var(--pp-text-muted)', letterSpacing:'0.8px', textTransform:'uppercase', margin:'0 0 8px' }}>Suggested Queries</p>
+        <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
           {SUGGESTED.map((s, i) => (
-            <button key={i} onClick={() => handleSubmit(s)}
-              className="text-xs px-3 py-1.5 rounded-full border border-teal-200 text-teal-700 bg-teal-50 hover:bg-teal-100 transition-colors">
+            <button key={i} onClick={() => handleSubmit(s)} style={{
+              fontSize:12, color:'var(--pp-text-sec)', fontWeight:500,
+              background:'#fff', border:'1px solid var(--pp-border2)',
+              borderRadius:20, padding:'6px 14px', cursor:'pointer', transition:'all 0.15s',
+            }}
+            onMouseEnter={e => { (e.target as HTMLElement).style.background='var(--teal-light)'; (e.target as HTMLElement).style.borderColor='var(--teal-border)'; (e.target as HTMLElement).style.color='var(--teal-dark)'; }}
+            onMouseLeave={e => { (e.target as HTMLElement).style.background='#fff'; (e.target as HTMLElement).style.borderColor='var(--pp-border2)'; (e.target as HTMLElement).style.color='var(--pp-text-sec)'; }}
+            >
               {s}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6">
-        {!streamText && !isStreaming && !error && (
-          <div className="text-center mt-12 text-slate-400">
-            <p className="text-4xl mb-3">🤖</p>
-            <p className="text-sm">Ask a clinical question about this patient</p>
-            <p className="text-xs mt-1">Grounded in live FHIR data</p>
+      {/* Result area */}
+      <div style={{ flex:1, overflowY:'auto', padding:'20px 24px' }}>
+        {!streamText && !isStreaming && !error && !parsed && (
+          <p style={{ textAlign:'center', marginTop:40, fontSize:13, color:'var(--pp-text-muted)', fontStyle:'italic' }}>
+            Ask a clinical question to get started.
+          </p>
+        )}
+
+        {isStreaming && !parsed && (
+          <div>
+            {!streamingDisplay && (
+              <div style={{ display:'flex', alignItems:'center', gap:8, justifyContent:'center', marginTop:40 }}>
+                <Loader2 size={16} color="var(--teal)" style={{ animation:'spin 1s linear infinite' }} />
+                <span style={{ fontSize:13, color:'var(--pp-text-muted)' }}>Analyzing patient data…</span>
+              </div>
+            )}
+            {streamingDisplay && (
+              <pre style={{ fontSize:12, color:'var(--pp-text-muted)', fontFamily:"'JetBrains Mono', monospace", whiteSpace:'pre-wrap', lineHeight:1.6 }}>
+                {streamingDisplay}
+              </pre>
+            )}
           </div>
         )}
-        {isStreaming && !hasCompleteJSON && (
-          <div className="flex items-center gap-2 justify-center mt-12">
-            <Loader2 className="w-5 h-5 animate-spin text-teal-600" />
-            <span className="text-sm text-slate-500">Analyzing patient data…</span>
+
+        {parsed && (
+          <div style={{ background:'#fff', border:'1px solid var(--pp-border)', borderRadius:10, padding:18 }}>
+            <StructuredResponse parsed={parsed} citations={citations} />
           </div>
         )}
-        {streamText && hasCompleteJSON && renderStream(streamText)}
-        {error && <div className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">{error}</div>}
+
+        {error && (
+          <div role="alert" style={{ marginTop:16, fontSize:12, color:'var(--pp-danger)', background:'var(--pp-danger-bg)', border:'1px solid #FCA5A5', borderRadius:8, padding:'10px 14px' }}>
+            {error}
+          </div>
+        )}
       </div>
 
-      <div className="p-4 border-t border-slate-200 bg-white">
-        <p className="text-xs text-slate-400 text-center mb-2 uppercase tracking-wider">For clinical decision support only — not a clinical prediction</p>
-        <div className="flex gap-2">
-          <input value={query} onChange={e => setQuery(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleSubmit() }}
+      {/* Input */}
+      <div style={{ padding:'12px 24px 16px', borderTop:'1px solid var(--pp-border)', background:'#fff' }}>
+        <p style={{ fontSize:10, fontWeight:600, color:'var(--pp-text-muted)', letterSpacing:'0.5px', textTransform:'uppercase', textAlign:'center', margin:'0 0 10px' }}>
+          For clinical decision support only — not a clinical prediction
+        </p>
+        <div style={{ display:'flex', gap:8, alignItems:'flex-end' }}>
+          <textarea
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit() } }}
             placeholder="Ask a clinical question about this patient…"
+            rows={2}
+            maxLength={500}
             disabled={isStreaming}
-            className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 disabled:opacity-50"
+            style={{
+              flex:1, border:'1.5px solid var(--pp-border2)', borderRadius:10,
+              padding:'10px 14px', fontSize:13.5, color:'var(--pp-text)',
+              background:'#fff', resize:'none', outline:'none',
+              fontFamily:"'DM Sans', sans-serif", lineHeight:1.5,
+            }}
           />
-          <button onClick={() => handleSubmit()} disabled={isStreaming || !query.trim()}
-            className="px-4 py-2 bg-teal-600 hover:bg-teal-700 disabled:bg-slate-200 text-white rounded-lg transition-colors">
-            {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          <button
+            onClick={() => handleSubmit()}
+            disabled={isStreaming || !query.trim()}
+            style={{
+              width:40, height:40, borderRadius:10, flexShrink:0,
+              background: isStreaming || !query.trim() ? 'var(--pp-surface2)' : 'var(--teal)',
+              border:'none', cursor: isStreaming || !query.trim() ? 'not-allowed' : 'pointer',
+              display:'flex', alignItems:'center', justifyContent:'center', transition:'background 0.15s',
+            }}
+          >
+            {isStreaming
+              ? <Loader2 size={15} color="var(--pp-text-muted)" style={{ animation:'spin 1s linear infinite' }} />
+              : <Send size={15} color={query.trim() ? '#fff' : 'var(--pp-text-muted)'} />
+            }
           </button>
         </div>
       </div>

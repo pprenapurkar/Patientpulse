@@ -1,18 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 * { box-sizing: border-box; }
 
+:root {
+  --teal:           #0D9E75;
+  --teal-light:     #E1F5EE;
+  --teal-mid:       #5DCAA5;
+  --teal-dark:      #085041;
+  --teal-border:    #9FE1CB;
+  --pp-surface:     #F7FBFA;
+  --pp-surface2:    #EFF7F4;
+  --pp-border:      #D4EDE6;
+  --pp-border2:     #B8DCCE;
+  --pp-text:        #0D2E24;
+  --pp-text-sec:    #4A7264;
+  --pp-text-muted:  #8BADA1;
+  --pp-danger:      #E24B4A;
+  --pp-danger-bg:   #FEF2F2;
+  --pp-warning:     #BA7517;
+  --pp-warning-bg:  #FAEEDA;
+  --pp-amber:       #EF9F27;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: #f8fafc;
-  color: #0f172a;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: var(--pp-surface);
+  color: var(--pp-text);
   -webkit-font-smoothing: antialiased;
 }
 
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: #f1f5f9; }
-::-webkit-scrollbar-thumb { background: #0d9488; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #0f766e; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--pp-surface); }
+::-webkit-scrollbar-thumb { background: var(--teal-border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--teal); }

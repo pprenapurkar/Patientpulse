@@ -1,68 +1,88 @@
 // src/components/clinician/EHRSnapshotPanel.tsx
 import type { PatientContext, FHIRObservation } from '../../types/api.types'
 
-function TrendArrow({ value, reference }: { value: number; reference: number }) {
-  if (value > reference * 1.05) return <span className="text-red-500 font-bold text-xs">↑</span>
-  if (value < reference * 0.95) return <span className="text-teal-600 font-bold text-xs">↓</span>
-  return <span className="text-slate-400 text-xs">→</span>
-}
-
 interface Props { context: PatientContext | undefined; isLoading: boolean }
 
 export function EHRSnapshotPanel({ context, isLoading }: Props) {
   if (isLoading) {
     return (
-      <div className="p-6 space-y-3">
+      <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {[1,2,3,4,5].map(i => (
-          <div key={i} className="h-10 bg-slate-100 rounded animate-pulse" />
+          <div key={i} style={{ height: 44, background: 'var(--pp-surface2)', borderRadius: 8, animation: 'pulse 1.5s infinite' }} />
         ))}
       </div>
     )
   }
 
-  if (!context) return <div className="p-6 text-slate-400 text-sm">No data available.</div>
+  if (!context) return <div style={{ padding: 24, color: 'var(--pp-text-muted)', fontSize: 13 }}>No data available.</div>
 
   const labObs: FHIRObservation[] = context.observations.filter(o =>
     o.category?.some(c => c.coding?.some(cd => cd.code === 'laboratory' || cd.code === 'vital-signs'))
-  ).slice(0, 10)
+  ).slice(0, 15)
+
+  // Colour-code by value type
+  const getValueColor = (obs: FHIRObservation) => {
+    const name = obs.code?.coding?.[0]?.display?.toLowerCase() ?? ''
+    const val = obs.valueQuantity?.value ?? 0
+    if (name.includes('glucose') && val > 140) return '#E24B4A'
+    if (name.includes('heart rate') && val > 100) return '#E24B4A'
+    if (name.includes('blood pressure') && val > 130) return '#EF9F27'
+    if (name.includes('hba1c') && val > 8) return '#EF9F27'
+    if (name.includes('egfr') && val < 60) return '#E24B4A'
+    return 'var(--teal-dark)'
+  }
 
   return (
-    <div className="p-6">
-      <div className="mb-2 flex items-center justify-between">
-        <p className="text-xs text-slate-400 uppercase font-semibold tracking-wider">
-          Snapshot of FHIR digital twin
-        </p>
-        <p className="text-xs text-slate-400">assembled {new Date().toLocaleTimeString()}</p>
+    <div style={{ padding: 24 }}>
+      <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', marginBottom: 14 }}>
+        <span style={{ fontSize:11, fontWeight:700, color:'var(--pp-text-muted)', letterSpacing:'0.8px', textTransform:'uppercase' }}>
+          Snapshot of FHIR Digital Twin
+        </span>
+        <span style={{ fontSize:11, color:'var(--pp-text-muted)' }}>
+          assembled {new Date().toLocaleTimeString()}
+        </span>
       </div>
 
-      {/* Observations table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <div className="grid grid-cols-4 px-4 py-2 bg-slate-50 border-b border-slate-200 text-xs text-slate-400 uppercase font-semibold">
-          <span>Observation</span>
-          <span className="text-right">Value</span>
-          <span className="text-right">Date</span>
-          <span className="text-right">ID</span>
+      <div style={{ fontSize:10, fontWeight:700, color:'var(--pp-text-muted)', letterSpacing:'0.8px', textTransform:'uppercase', marginBottom:10 }}>
+        All Observations — Last 30 Days
+      </div>
+
+      <div style={{ background:'#fff', borderRadius:10, border:'1px solid var(--pp-border)', overflow:'hidden' }}>
+        {/* Header row */}
+        <div style={{ display:'grid', gridTemplateColumns:'3fr 2fr 1.5fr 1.2fr', padding:'10px 16px', background:'var(--pp-surface2)', borderBottom:'1px solid var(--pp-border)' }}>
+          {['Observation','Value','Date','ID'].map(h => (
+            <span key={h} style={{ fontSize:11, fontWeight:700, color:'var(--pp-text-muted)', letterSpacing:'0.8px', textTransform:'uppercase', textAlign: h==='ID' ? 'right' : h==='Value' ? 'right' : 'left' }}>{h}</span>
+          ))}
         </div>
+
         {labObs.length === 0 && (
-          <p className="px-4 py-6 text-sm text-slate-400 text-center">No recent observations</p>
+          <p style={{ padding:'24px 16px', textAlign:'center', fontSize:13, color:'var(--pp-text-muted)' }}>No recent observations</p>
         )}
+
         {labObs.map((obs, i) => {
           const display = obs.code?.coding?.[0]?.display ?? obs.code?.text ?? 'Unknown'
           const val = obs.valueQuantity
-          const date = new Date(obs.effectiveDateTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })
+          const date = new Date(obs.effectiveDateTime).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'2-digit' })
+          const shortId = obs.id?.slice(-8) ?? '—'
+          const valColor = val ? getValueColor(obs) : 'var(--pp-text-muted)'
+
           return (
-            <div key={obs.id} className={`grid grid-cols-4 px-4 py-3 items-center text-sm border-b border-slate-100 last:border-0 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-              <span className="text-slate-700 font-medium truncate pr-2">{display}</span>
-              <span className="text-right font-mono font-semibold text-teal-700">
+            <div key={obs.id} style={{
+              display:'grid', gridTemplateColumns:'3fr 2fr 1.5fr 1.2fr',
+              padding:'10px 16px', alignItems:'center',
+              borderBottom: i < labObs.length - 1 ? '1px solid var(--pp-border)' : 'none',
+              background: i % 2 === 0 ? '#fff' : 'var(--pp-surface)',
+            }}>
+              <span style={{ fontSize:13, fontWeight:500, color:'var(--pp-text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', paddingRight:12 }}>{display}</span>
+              <span style={{ fontSize:13, fontWeight:700, color: valColor, fontFamily:"'JetBrains Mono', monospace", textAlign:'right' }}>
                 {val ? `${val.value} ${val.unit}` : '—'}
-                {val && <TrendArrow value={val.value} reference={val.value} />}
               </span>
-              <span className="text-right text-slate-400 text-xs">{date}</span>
-              <span className="text-right">
-                <span className="text-xs font-mono bg-teal-50 text-teal-700 px-1.5 py-0.5 rounded border border-teal-100">
-                  {obs.id?.slice(-8) ?? '—'}
+              <span style={{ fontSize:12, color:'var(--pp-text-muted)', textAlign:'right' }}>{date}</span>
+              <div style={{ display:'flex', justifyContent:'flex-end' }}>
+                <span style={{ fontSize:10.5, fontWeight:600, color:'var(--teal)', background:'var(--teal-light)', border:'1px solid var(--teal-border)', borderRadius:5, padding:'2px 8px', fontFamily:"'JetBrains Mono', monospace", whiteSpace:'nowrap' }}>
+                  {shortId}
                 </span>
-              </span>
+              </div>
             </div>
           )
         })}

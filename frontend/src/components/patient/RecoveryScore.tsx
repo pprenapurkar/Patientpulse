@@ -1,16 +1,19 @@
+// src/components/patient/RecoveryScore.tsx
 import { TrendingUp, Minus, TrendingDown } from 'lucide-react'
 
 interface Props { score: number | null; trend: 'IMPROVING' | 'STABLE' | 'DECLINING' | null }
 
 export function RecoveryScore({ score, trend }: Props) {
   if (score === null) return null
-  const color = score >= 70 ? 'text-teal-200' : score >= 50 ? 'text-amber-200' : 'text-red-200'
+  const color =
+    score >= 70 ? 'var(--teal)' :
+    score >= 50 ? '#EF9F27' : '#E24B4A'
   const TrendIcon = trend === 'IMPROVING' ? TrendingUp : trend === 'DECLINING' ? TrendingDown : Minus
   return (
-    <div className="flex items-center gap-1.5" data-testid="recovery-score" aria-label={`Recovery score: ${score}`}>
-      <TrendIcon className={`w-3.5 h-3.5 ${color}`} />
-      <span className={`text-sm font-bold ${color}`}>{Math.round(score)}</span>
-      <span className="text-xs text-teal-300">/ 100</span>
+    <div style={{ display:'flex', alignItems:'center', gap:6, background:'var(--pp-surface2)', border:'1px solid var(--pp-border)', borderRadius:20, padding:'4px 12px' }} data-testid="recovery-score" aria-label={`Recovery score: ${score}`}>
+      <TrendIcon size={13} color={color} />
+      <span style={{ fontSize:14, fontWeight:700, color, fontFamily:"'JetBrains Mono', monospace" }}>{Math.round(score)}</span>
+      <span style={{ fontSize:11, color:'var(--pp-text-muted)' }}>/ 100</span>
     </div>
   )
 }
