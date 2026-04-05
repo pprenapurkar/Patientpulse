@@ -1,0 +1,24 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements from backend/ and install
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy both packages — backend/ and ai/ are both needed
+COPY backend/ /app/backend/
+COPY ai/ /app/ai/
+COPY fixtures/ /app/fixtures/
+
+# PYTHONPATH so `from backend.app.xxx` and `from ai.agents.xxx` both resolve
+ENV PYTHONPATH=/app
+
+EXPOSE 8000
+
+CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
