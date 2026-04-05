@@ -45,17 +45,17 @@ export function MedConfirmButton({ patientId, medication, onConfirmed }: Props) 
   if (confirmed) {
     return (
       <div
-        className="w-full py-3 rounded-xl bg-green-900/30 border border-green-700/60 text-center"
+        className="w-full py-3 rounded-xl bg-teal-50 border border-teal-200 text-center"
         data-testid="med-confirm-success"
       >
-        <div className="flex items-center justify-center gap-2 text-green-400 font-semibold text-sm">
+        <div className="flex items-center justify-center gap-2 text-teal-600 font-semibold text-sm">
           <CheckCircle className="w-4 h-4" />
           Medication confirmed!
         </div>
         {streak !== null && (
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             {streak}-day streak
-            {milestone && <span className="ml-1 text-yellow-400">{milestone}</span>}
+            {milestone && <span className="ml-1 text-amber-500">{milestone}</span>}
           </p>
         )}
       </div>
@@ -68,12 +68,12 @@ export function MedConfirmButton({ patientId, medication, onConfirmed }: Props) 
       disabled={isLoading}
       aria-label={`Confirm you took ${medName} today`}
       data-testid="med-confirm-button"
-      className="w-full py-3 rounded-xl bg-gray-800 hover:bg-gray-700 active:bg-gray-600 border border-gray-700 text-gray-200 text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+      className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 border border-slate-200 text-slate-800 text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
     >
       {isLoading ? (
         <Loader2 className="w-4 h-4 animate-spin" />
       ) : (
-        <CheckCircle className="w-4 h-4 text-green-400" />
+        <CheckCircle className="w-4 h-4 text-teal-600" />
       )}
       {isLoading ? 'Confirming…' : `Took ${medName.split(' ')[0]} today`}
     </button>

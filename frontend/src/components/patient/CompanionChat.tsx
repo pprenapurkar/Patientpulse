@@ -84,7 +84,7 @@ export function CompanionChat({ patientId, onCheckinComplete }: Props) {
 
   return (
     <div className="flex flex-col flex-1 min-h-0" data-testid="companion-chat">
-      <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2">Daily Check-in</p>
+      <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-2">Daily Check-in</p>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-3 mb-3 min-h-0" aria-live="polite" aria-label="Conversation">
@@ -96,8 +96,8 @@ export function CompanionChat({ patientId, onCheckinComplete }: Props) {
             <div
               className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
                 msg.role === 'user'
-                  ? 'bg-blue-600 text-white rounded-br-sm'
-                  : 'bg-gray-800 text-gray-200 rounded-bl-sm'
+                  ? 'bg-teal-600 text-white rounded-br-sm'
+                  : 'bg-slate-100 text-slate-800 rounded-bl-sm'
               } ${msg.flagLevel === 'ESCALATE' ? 'border border-red-500' : ''}`}
               data-testid={`message-${msg.role}`}
             >
@@ -110,8 +110,8 @@ export function CompanionChat({ patientId, onCheckinComplete }: Props) {
         ))}
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-gray-800 rounded-2xl rounded-bl-sm px-3 py-2" aria-busy="true">
-              <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+            <div className="bg-slate-100 rounded-2xl rounded-bl-sm px-3 py-2" aria-busy="true">
+              <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
             </div>
           </div>
         )}
@@ -129,13 +129,13 @@ export function CompanionChat({ patientId, onCheckinComplete }: Props) {
           maxLength={500}
           disabled={isLoading}
           aria-label="Check-in message"
-          className="flex-1 bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-200 placeholder-gray-600 resize-none focus:outline-none focus:border-blue-600 disabled:opacity-50"
+          className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-slate-400 resize-none focus:outline-none focus:border-teal-500 disabled:opacity-50"
         />
         <button
           onClick={handleSend}
           disabled={isLoading || !input.trim()}
           aria-label="Send check-in message"
-          className="p-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 rounded-xl text-white transition-colors shrink-0"
+          className="p-2.5 bg-teal-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-slate-400 rounded-xl text-white transition-colors shrink-0"
         >
           {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         </button>
