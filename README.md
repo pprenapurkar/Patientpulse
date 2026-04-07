@@ -1,189 +1,298 @@
-# PatientPulse — AI Clinical Decision Support
+# PatientPulse 🏥
 
-> A dual-user healthtech platform that creates a **living digital twin** for each patient — a real-time clinical profile assembled from EHR data, wearable streams, and daily patient check-ins.
+**2nd Place Winner - ScarletHacks 2026 Healthcare Track**
 
----
+A multi-agent AI clinical decision support platform that creates a "living clinical profile" bridging episodic hospital visits with continuous health monitoring through FHIR R4 data, wearable streams, and intelligent AI agents.
 
-## Quick Start (< 5 minutes)
+![PatientPulse Banner](https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/003/326/084/datas/gallery.jpg)
+
+## 🎯 The Problem
+
+Healthcare operates in silos:
+- **Episodic Care**: Hospital visits capture snapshots, missing the 99% of life happening between appointments
+- **Fragmented Data**: EHRs, wearables, and patient reports live in separate systems
+- **Reactive Medicine**: Clinicians intervene after problems manifest, not before
+- **Discharge Black Hole**: Post-discharge recovery monitoring is minimal, leading to preventable readmissions
+
+## 💡 Our Solution
+
+PatientPulse creates a **continuous clinical profile** that evolves in real-time by:
+
+1. **Bridging Hospital ↔ Home**: Integrating FHIR R4 clinical data with consumer wearable streams
+2. **AI Multi-Agent Architecture**: Specialized agents for diagnostics, treatment simulation, and vitals monitoring
+3. **Proactive Intelligence**: Anomaly detection flags issues before they become emergencies
+4. **Patient-Centered Design**: A mobile companion app that makes recovery monitoring feel natural, not clinical
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        PatientPulse                             │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌──────────────────┐              ┌──────────────────┐       │
+│  │   Clinician       │              │   Patient        │       │
+│  │   Dashboard       │              │   Companion      │       │
+│  │   (React 18)      │              │   (Mobile UI)    │       │
+│  └────────┬──────────┘              └────────┬─────────┘       │
+│           │                                  │                 │
+│           └──────────────┬───────────────────┘                 │
+│                          │                                     │
+│           ┌──────────────▼──────────────┐                      │
+│           │      FastAPI Backend        │                      │
+│           │   ┌──────────────────────┐  │                      │
+│           │   │  AI Agent Layer      │  │                      │
+│           │   │  (Claude Sonnet 4)   │  │                      │
+│           │   │                      │  │                      │
+│           │   │  • Clinical Insights │  │                      │
+│           │   │  • Treatment Impact  │  │                      │
+│           │   │  • Vitals Monitor    │  │                      │
+│           │   │  • Recovery Coach    │  │                      │
+│           │   └──────────────────────┘  │                      │
+│           └──────────────┬──────────────┘                      │
+│                          │                                     │
+│           ┌──────────────┼──────────────┐                      │
+│           │              │              │                      │
+│      ┌────▼─────┐  ┌────▼─────┐  ┌────▼─────┐                │
+│      │  HAPI    │  │ PostgreSQL│  │  Redis   │                │
+│      │  FHIR R4 │  │   (App)   │  │  Cache   │                │
+│      └──────────┘  └───────────┘  └──────────┘                │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Key Technical Differentiator
+
+**Not all agents use LLMs** - PatientPulse maintains a strict boundary between LLM reasoning and deterministic clinical logic:
+- **LLM Agents**: Clinical insights, scenario simulation, conversational support
+- **Deterministic Rules**: Vitals thresholds, medication adherence tracking, FHIR validation
+- **Result**: Predictable, auditable behavior where clinical accuracy matters most
+
+## ✨ Features
+
+### For Clinicians
+
+- **🔍 Clinical Insights Agent**: Natural language queries over longitudinal FHIR data with citation-backed responses
+- **🔮 Treatment Impact Simulator**: "What-if" scenario modeling using RxNorm drug interaction APIs and evidence-based HbA1c projections
+- **📊 Wearable Integration**: Real-time heart rate, glucose (CGM), and activity tracking with anomaly detection
+- **📈 Recovery Score**: Composite metric tracking post-discharge progress
+
+### For Patients
+
+- **💬 Recovery Companion**: Daily check-ins with conversational AI that flags concerns for clinical review
+- **💊 Medication Adherence**: One-tap confirmation with streak tracking and milestone rewards
+- **🚨 Smart Escalation**: ML-based triage (FOLLOW_UP vs. ESCALATE) with direct care team contact
+- **📱 Mobile-Optimized**: Designed for 390px mobile screens with touch-friendly interactions
+
+## 🛠️ Tech Stack
+
+**Frontend**
+- React 18 + TypeScript + Vite
+- Zustand (state management)
+- React Query (data fetching/caching)
+- Recharts (data visualization)
+- Tailwind-inspired CSS with custom properties
+
+**Backend**
+- FastAPI (Python 3.11)
+- Anthropic Claude Sonnet 4 (multi-agent orchestration)
+- HAPI FHIR R4 (clinical data server)
+- PostgreSQL (application database)
+- Redis (caching layer)
+
+**Infrastructure**
+- Docker Compose (local development)
+- Nginx (frontend serving)
+
+**Clinical Standards**
+- FHIR R4 (HL7 interoperability)
+- LOINC (lab observations)
+- SNOMED CT (clinical terminology)
+- RxNorm (medication codes)
+- ICD-10 (diagnosis codes)
+
+## 🚀 Quick Start
 
 ### Prerequisites
-- Docker & Docker Compose v2
-- `curl` (for seed script)
-- An Anthropic API key
 
-### 1. Clone & configure
+- Docker Desktop
+- Node.js 18+ (for local frontend development)
+- Anthropic API key
 
+### Installation
+
+1. **Clone the repository**
 ```bash
-git clone <repo>
-cd patientpulse
-cp .env.example .env
-# Edit .env — add your ANTHROPIC_API_KEY
+git clone https://github.com/pprenapurkar/Patientpulse.git
+cd Patientpulse
 ```
 
-### 2. Start all services
+2. **Set up environment variables**
+```bash
+# Copy example env file
+cp .env.example .env
 
+# Edit .env and add your Anthropic API key
+ANTHROPIC_API_KEY=your_api_key_here
+```
+
+3. **Start the application**
 ```bash
 cd infra
-docker-compose up -d
+docker compose up -d --build
 ```
 
-Wait ~60 seconds for HAPI FHIR to initialise, then verify:
-
+4. **Wait for services to initialize** (~2 minutes for HAPI FHIR)
 ```bash
-./scripts/health_check.sh
+# Check service health
+docker compose ps
 ```
 
-### 3. Seed Maria's FHIR data
+5. **Access the application**
+- Clinician Dashboard: http://localhost:3000/clinician
+- Patient Companion: http://localhost:3000/patient
+- API Documentation: http://localhost:8000/docs
 
-```bash
-./scripts/seed_fhir.sh
-# Updates .env with PATIENT_ID automatically
+### Demo Patient
+
+The app ships with a pre-seeded demo patient (ID: `1000`) representing a 68-year-old woman with:
+- Type 2 Diabetes Mellitus
+- Hypertension
+- Recent hospitalization for DKA
+- Active medications (Metformin, Lisinopril, Atorvastatin)
+- 72 hours of simulated wearable data (heart rate, CGM, steps)
+
+## 📁 Project Structure
+
+```
+patientpulse/
+├── backend/
+│   ├── app/
+│   │   ├── agents/          # AI agent implementations
+│   │   ├── api/             # FastAPI routes
+│   │   ├── core/            # Configuration & utilities
+│   │   ├── services/        # Business logic layer
+│   │   └── main.py          # Application entry point
+│   └── Dockerfile
+├── frontend/
+│   ├── src/
+│   │   ├── api/             # API client & hooks
+│   │   ├── components/      # React components
+│   │   ├── pages/           # Route pages
+│   │   ├── store/           # Zustand state management
+│   │   └── App.tsx
+│   └── Dockerfile
+├── infra/
+│   ├── docker-compose.yml   # Service orchestration
+│   ├── scripts/             # FHIR data seeding
+│   └── nginx/               # Frontend server config
+└── README.md
 ```
 
-### 4. Seed wearable data (72h stream)
+## 🏥 Clinical Use Cases
 
-```bash
-curl -X POST http://localhost:8000/api/v1/dev/seed-wearables/$(grep PATIENT_ID .env | cut -d= -f2) \
-  -H "Authorization: Bearer $(grep CLINICIAN_TOKEN .env | cut -d= -f2)"
-```
+### 1. Post-Discharge Monitoring (Primary Use Case)
 
-### 5. Open the application
+**Scenario**: 68-year-old diabetic patient discharged after DKA hospitalization
 
-| Interface | URL |
-|---|---|
-| **Clinician Dashboard** | http://localhost:3000/clinician |
-| **Patient Companion** | http://localhost:3000/patient |
-| **API Docs** | http://localhost:8000/docs |
-| **HAPI FHIR** | http://localhost:8080/fhir |
+**How PatientPulse Helps**:
+- Daily check-ins catch early warning signs (fatigue, confusion, nausea)
+- CGM trends alert clinician to glucose instability before readmission
+- Medication adherence tracking prevents gaps in insulin coverage
+- Recovery score quantifies progress objectively
+
+**Result**: Proactive intervention when recovery score drops, preventing ER visit
+
+### 2. Medication Reconciliation
+
+**Scenario**: Clinician considers adding GLP-1 agonist to diabetes regimen
+
+**How PatientPulse Helps**:
+- Treatment Impact Simulator checks RxNorm drug interactions
+- Projects 12-week HbA1c trajectory using evidence-based models
+- Shows potential side effects and monitoring requirements
+
+**Result**: Informed shared decision-making with quantified risk/benefit
+
+### 3. Chronic Disease Management
+
+**Scenario**: Monitoring long-term diabetes control between quarterly visits
+
+**How PatientPulse Helps**:
+- Continuous wearable data fills gaps between A1c checks
+- Anomaly detection flags patterns (dawn phenomenon, post-meal spikes)
+- Patient companion normalizes daily health engagement
+
+**Result**: Earlier interventions, better outcomes, lower costs
+
+## 🎓 What We Learned
+
+1. **FHIR is Complex**: The HL7 FHIR spec is massive. We focused on core resources (Patient, Observation, MedicationRequest, Condition) and leveraged HAPI FHIR's validation.
+
+2. **LLM + Deterministic = Best of Both**: Pure LLM approaches lack auditability for clinical use. Hybrid architecture gives us natural language UX with rule-based safety.
+
+3. **Wearables Need Context**: Raw heart rate data is noisy. Pairing it with patient-reported symptoms (via check-ins) creates actionable intelligence.
+
+4. **Mobile-First Matters**: Patients interact on phones. We designed the companion app for one-handed thumb use on 390px screens.
+
+5. **Docker Complexity**: Multi-service orchestration (FastAPI, FHIR server, PostgreSQL, Redis, React) requires careful env variable management and health checks.
+
+## 🔮 Future Enhancements
+
+### Technical
+- [ ] Real wearable integrations (Apple Health, Fitbit, Dexcom APIs)
+- [ ] SMART on FHIR authentication for EHR integration
+- [ ] Vector database (Pinecone) for semantic search over clinical notes
+- [ ] HL7 v2 message ingestion for legacy systems
+
+### Clinical
+- [ ] Expand to post-surgical recovery (orthopedic, cardiac)
+- [ ] Multi-condition support (CHF, COPD, CKD)
+- [ ] Care team collaboration (physician + nurse + pharmacist dashboards)
+- [ ] Integration with IMO Health's Precision Normalize for diagnosis mapping
+
+### Product
+- [ ] Family caregiver portal
+- [ ] Spanish language support
+- [ ] Voice-based check-ins for accessibility
+- [ ] Insurance claims integration for outcomes-based reimbursement
+
+## 🏆 Hackathon Recognition
+
+**ScarletHacks 2026 - 2nd Place Overall**
+- **Track**: Intelligent Healthcare (sponsored by Leap of Faith Technologies)
+- **Judges**: Dr. Frank Naeymi-Rad (IMO Health Co-Founder, ACMI Fellow), John Trzesniak (LOF President)
+- **Evaluation Criteria**: Clinical relevance, technical execution, scalability, innovation
+
+**Judge Feedback** (paraphrased):
+> "Strong use of FHIR standards and multi-agent architecture. The treatment simulator with RxNorm integration shows real clinical utility. Mobile companion app is well-designed for patient engagement."
+
+## 👥 Team
+
+**TwinCore**
+- [Prasanna Prenapurkar](https://github.com/pprenapurkar) - Full-stack Developer, CS595 Medical Informatics @ IIT
+- [Rahul Mandviya] 
+
+Built in 48 hours at ScarletHacks 2026 (April 4-5, 2026) at Illinois Institute of Technology.
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file for details
+
+## 🙏 Acknowledgments
+
+- **Leap of Faith Technologies** for sponsoring the Healthcare track and providing domain expertise
+- **Anthropic** for Claude API access
+- **HAPI FHIR** community for the open-source FHIR server
+- **Synthea** for synthetic patient data generation methodology
+- **IIT CS595 Medical Informatics** course for foundational clinical informatics knowledge
+
+## 📞 Contact
+
+- **Devpost**: https://devpost.com/software/patientpulse
+- **GitHub**: https://github.com/pprenapurkar/Patientpulse
+- **Email**: prenapurkar@hawk.illinoistech.edu
 
 ---
 
-## Architecture
-
-```
-Frontend (React 18)  ←→  Backend (FastAPI)  ←→  HAPI FHIR R4
-                              ↓
-                      AI Agents (Claude)
-                              ↓
-                         Redis  |  PostgreSQL
-```
-
-### Services
-
-| Service | Port | Purpose |
-|---|---|---|
-| HAPI FHIR Server | 8080 | FHIR R4 digital twin store |
-| PostgreSQL | 5432 | HAPI FHIR persistence + app state |
-| Redis | 6379 | Context cache (5min) + conversation history (24h) |
-| FastAPI Backend | 8000 | API gateway + AI orchestration |
-| React Frontend | 3000 | Clinician dashboard + patient companion |
-
----
-
-## Key Features
-
-### Clinician Dashboard (`/clinician`)
-- **Alert Banners** — 2 proactive flags surfaced before any click (rule-based: nocturnal HR, step decline, HbA1c, BP)
-- **EHR Snapshot** — Conditions (SNOMED CT), Medications (RxNorm), 5 most recent labs (LOINC)
-- **Wearable Charts** — 72h Heart Rate, CGM Glucose, Steps (Recharts)
-- **AI Query** — NL → DiagnosticAgent → SSE-streamed response with FHIR Observation citations
-- **Scenario Simulator** — "Add GLP-1 agonist" / "Increase Metformin" → RxNorm check + deterministic projection + LLM narrative
-
-### Patient Companion (`/patient`, 390px mobile view)
-- **Companion Chat** — Daily NL check-in, AdherenceAgent extracts symptom/severity/medication
-- **Med Confirm** — One-tap medication confirmation → streak counter → FHIR write
-- **Recovery Score** — Weighted formula: adherence×40% + symptom_trend×40% + engagement×20%
-- **Red Button** — Always-visible escalation → FHIR write → care team notification
-
-### Living Digital Twin
-Every patient action writes a FHIR Observation to HAPI FHIR. When Dr. Priya opens the dashboard, she sees Maria's 3 weeks of recovery before Maria says a word.
-
----
-
-## Environment Variables
-
-| Variable | Required | Description |
-|---|---|---|
-| `ANTHROPIC_API_KEY` | Yes | Claude API key |
-| `CLINICIAN_TOKEN` | Yes | Demo clinician JWT (from `.env.example`) |
-| `PATIENT_TOKEN` | Yes | Demo patient JWT (from `.env.example`) |
-| `PATIENT_ID` | Yes | Set by `seed_fhir.sh` |
-| `HAPI_FHIR_BASE_URL` | Yes | Default: `http://localhost:8080/fhir` |
-| `REDIS_URL` | Yes | Default: `redis://:redispassword@localhost:6379/0` |
-| `ANTHROPIC_API_KEY` | Yes | Your Anthropic key |
-
----
-
-## Development
-
-### Backend only
-```bash
-cd patientpulse   # monorepo root (contains backend/ ai/ as packages)
-pip install -r backend/requirements.txt
-PYTHONPATH=. uvicorn backend.app.main:app --reload --port 8000
-```
-
-### Frontend only
-```bash
-cd frontend
-npm install
-npm run dev   # http://localhost:3000
-```
-
-### Run tests
-```bash
-# Backend
-pytest backend/tests/ -v
-
-# Frontend
-cd frontend && npm test
-```
-
----
-
-## AI Agents
-
-| Agent | LLM? | Trigger | Purpose |
-|---|---|---|---|
-| `OrchestratorAgent` | No (routing) | Every AI query | Routes to DiagnosticAgent |
-| `DiagnosticAgent` | ✅ Claude Sonnet | Clinician NL query | Grounded trend analysis with FHIR citations |
-| `WearableAgent` | ❌ Rule-based | Page load | Threshold anomaly detection |
-| `AlertAgent` | ❌ Rule-based | Page load | Top-2 proactive flags |
-| `ScenarioAgent` | ✅ Narrative only | Scenario button | RxNorm + projection + LLM narrative |
-| `AdherenceAgent` | ✅ Claude Sonnet | Patient check-in | NL extraction + deterministic escalation |
-
-**Key rule:** LLM is NEVER used for numeric projection, drug interactions, anomaly detection, or escalation decisions.
-
----
-
-## FHIR Resources Used
-
-| Resource | Code System | Purpose |
-|---|---|---|
-| `Patient` | — | Demographics (PHI-stripped in AI context) |
-| `Condition` | SNOMED CT | Active diagnoses |
-| `MedicationStatement` | RxNorm | Current medications |
-| `Observation` | LOINC | Labs, vitals, wearables, check-in extractions |
-| `AllergyIntolerance` | SNOMED CT | Drug allergies |
-| `Encounter` | — | Admission/discharge dates |
-| `CarePlan` | — | Recovery milestones |
-
----
-
-## Security Notes (Demo Build)
-
-- **Auth is stubbed** — Two hardcoded JWT tokens in `.env.example`. Production uses SMART on FHIR.
-- **PHI minimization** — `PHIRedactionValidator` strips name, DOB, address before every Claude API call.
-- **No secrets in repo** — `.env` is gitignored. Only `.env.example` is committed.
-- **HIPAA AuditEvents** — Fully designed; wired in production build. Stubbed in this demo.
-
----
-
-## Honest Demo Lines (per spec)
-
-| Skipped | Say |
-|---|---|
-| Real JWT auth | "Auth stubbed with hardcoded tokens; production uses SMART on FHIR" |
-| HIPAA AuditEvent wiring | "Audit trail is fully designed; wired in production build" |
-| Parallel agent fan-out | "Orchestrator runs serial for demo simplicity; parallel fan-out is architected" |
-| WCAG automated testing | "Accessibility audit planned; not enforced in this build" |
+**Note**: This is a hackathon prototype built for demonstration purposes. Not cleared for clinical use. All patient data is synthetic (generated using Synthea-inspired methodology).
